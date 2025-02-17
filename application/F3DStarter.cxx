@@ -1618,6 +1618,42 @@ void F3DStarter::AddCommands()
     return f3d::options::parse<bool>(args[0]);
   };
 
+  interactor.addCommand("remove_file_groups",
+    [this](const std::vector<std::string>&)
+    { 
+      auto& internals = *this->Internals;
+
+      // Eliminate running animations before scene clearing
+      if (!internals.AppOptions.NoRender)
+      {
+        internals.Engine->getInteractor().stopAnimation();
+      }
+
+      auto& engine = *internals.Engine;
+      auto& scene = engine.getScene();
+      scene.clear(); // Clear display
+
+      // Remove file groups and cached files
+      internals.FilesGroups.clear();
+      internals.LoadedFiles.clear();
+
+      // Revert to default window name
+      f3d::window& window = this->Internals->Engine->getWindow();
+      window.setWindowName(F3D::AppTitle).setIcon(F3DIcon, sizeof(F3DIcon));
+
+      // Re-display drop zone, eliminate files
+      f3d::options& opts = engine.getOptions();
+      opts.ui.dropzone = true;
+      opts.ui.filename_info.clear();
+    });
+
+  interactor.addCommand("load_next_file_group",
+    [this](const std::vector<std::string>& args)
+    {
+      this->LoadRelativeFileGroup(
+        +1, parse_optional_bool_flag(args, "load_next_file_group", false));
+    });
+
   interactor.addCommand("load_previous_file_group",
     [this](const std::vector<std::string>& args)
     {
